@@ -1,5 +1,4 @@
 #undef UNICODE
-
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <stdlib.h>
@@ -15,8 +14,8 @@
 void startupChat();
 void serverListener();
 void clientListener();
-bool verifyIP();
-bool verifyPort();
+bool verifyIP(const char*);
+bool verifyPort(const char*);
 
 SOCKET leSocket;
 
