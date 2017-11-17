@@ -23,6 +23,7 @@ public:
 	~mySocket();
 	bool connect(const char* host, const char* port);
 	bool send(const char* message);
+	std::string read(int taille);
 private:
 	void receiveT();
 };
