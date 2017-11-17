@@ -147,16 +147,11 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="bd.cpp" />
-    <ClCompile Include="lab4serveur.cpp" />
-    <ClCompile Include="t_connexion.cpp" />
-    <ClCompile Include="t_reponse.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="socket.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="bd.h" />
-    <ClInclude Include="common.h" />
-    <ClInclude Include="t_connexion.h" />
-    <ClInclude Include="t_reponse.h" />
+    <ClInclude Include="socket.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
