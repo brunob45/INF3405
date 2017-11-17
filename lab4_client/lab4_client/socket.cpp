@@ -100,6 +100,14 @@ bool mySocket::send(const char* message)
 	}
 	return true;
 }
+std::string mySocket::read(int taille)
+{
+	char* buf = new char[taille];
+	iResult = recv(leSocket, buf, taille, 0);
+	std::string ret = buf;
+	delete[] buf;
+	return ret;
+}
 
 void mySocket::receiveT()
 {

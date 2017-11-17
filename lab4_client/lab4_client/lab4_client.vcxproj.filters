@@ -18,13 +18,16 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="socket.cpp">
+    <ClCompile Include="lab4client.cpp">
+      <Filter>Fichiers sources</Filter>
+    </ClCompile>
+    <ClCompile Include="console.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="console.cpp">
+    <ClCompile Include="socket.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
   </ItemGroup>
