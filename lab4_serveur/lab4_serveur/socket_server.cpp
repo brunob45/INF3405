@@ -1,5 +1,6 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
+#include <ws2tcpip.h>
 #include <winsock2.h>
 #include <iostream>
 #include <algorithm>
@@ -7,12 +8,14 @@
 #include <locale>
 #include <vector>
 #include <thread>
-#include "socket.h"
+#include "socket_server.h"
 
 using namespace std;
 
-SOCKET ServerSocket;
-std::vector<SOCKET> clients;
+void connexions(SOCKET server);
+void onReceive(const SOCKET& sd);
+vector<SOCKET> clients;
+vector<thread> threads;
 
 // List of Winsock error constants mapped to an interpretation string.
 // Note that this list must remain sorted by the error constants'
@@ -96,7 +99,7 @@ const int kNumMessages = sizeof(gaErrorList) / sizeof(ErrorEntry);
 // This function returns a pointer to an internal static buffer, so you
 // must copy the data from this function before you call it again.  It
 // follows that this function is also not thread-safe.
-const char* WSAGetLastErrorMessage(const char* pcMessagePrefix, int nErrorID = 0)
+const char* mySocket_server::WSAGetLastErrorMessage(const char* pcMessagePrefix, int nErrorID)
 {
 	// Build basic error string
 	static char acErrorBuffer[256];
@@ -125,12 +128,14 @@ const char* WSAGetLastErrorMessage(const char* pcMessagePrefix, int nErrorID = 0
 }
 
 mySocket_server::mySocket_server()
+	: ServerSocket(INVALID_SOCKET)
 {
 	//----------------------
 	// Initialize Winsock.
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != NO_ERROR) {
 		cerr << "Error at WSAStartup()\n" << endl;
+		getchar();
 		exit(1);
 	}
 
@@ -141,6 +146,7 @@ mySocket_server::mySocket_server()
 	if (ServerSocket == INVALID_SOCKET) {
 		cerr << WSAGetLastErrorMessage("Error at socket()") << endl;
 		WSACleanup();
+		getchar();
 		exit(1);
 	}
 	char option[] = "1";
@@ -149,32 +155,50 @@ mySocket_server::mySocket_server()
 
 mySocket_server::~mySocket_server()
 {
-	closesocket(ServerSocket);
+	if (ServerSocket != INVALID_SOCKET) {
+		closesocket(ServerSocket);
+	}
 	WSACleanup();
 }
 
-void connexions();
-bool mySocket_server::setup(int port)
+bool mySocket_server::setup(std::string host, std::string port)
 {
-	//Recuperation de l'adresse locale
-	hostent *thisHost;
+	struct addrinfo* service = NULL;
+	struct addrinfo	hints;
 
-	//TODO Modifier l'adresse IP ci-dessous pour celle de votre poste.
-	thisHost = gethostbyname("132.207.29.120");
-	char* ip;
-	ip = inet_ntoa(*(struct in_addr*) *thisHost->h_addr_list);
-	printf("Adresse locale trouvee %s : \n\n", ip);
-	sockaddr_in service;
-	service.sin_family = AF_INET;
-	//service.sin_addr.s_addr = inet_addr("127.0.0.1");
-	//	service.sin_addr.s_addr = INADDR_ANY;
-	service.sin_addr.s_addr = inet_addr(ip);
-	service.sin_port = htons(port);
+	//--------------------------------------------
+	// On va chercher l'adresse du serveur en utilisant la fonction getaddrinfo.
+	ZeroMemory(&hints, sizeof(hints));
+	hints.ai_family = AF_INET;        // Famille d'adresses
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_protocol = IPPROTO_TCP;  // Protocole utilisé par le serveur
+	hints.ai_flags = AI_PASSIVE;
 
-	if (::bind(ServerSocket, (SOCKADDR*)&service, sizeof(service)) == SOCKET_ERROR) {
-		cerr << WSAGetLastErrorMessage("bind() failed.") << endl;
+									  // getaddrinfo obtient l'adresse IP du host donné
+	int iResult = getaddrinfo(host.c_str(), port.c_str(), &hints, &service);
+	if (iResult != 0) {
+		printf("Erreur de getaddrinfo: %d\n", iResult);
 		return false;
 	}
+
+	// Create a SOCKET for connecting to server
+	ServerSocket = socket(service->ai_family, service->ai_socktype, service->ai_protocol);
+	if (ServerSocket == INVALID_SOCKET) {
+		printf("socket failed with error: %ld\n", WSAGetLastError());
+		freeaddrinfo(service);
+		return false;
+	}
+
+	// Setup the TCP listening socket
+	iResult = ::bind(ServerSocket, service->ai_addr, (int)service->ai_addrlen);
+	if (iResult == SOCKET_ERROR) {
+		printf("bind failed with error: %d\n", WSAGetLastError());
+		freeaddrinfo(service);
+		return false;
+	}
+
+	printf("En attente des connections des clients sur le port %s...\n\n", port.c_str());
+	freeaddrinfo(service);
 
 	//----------------------
 	// Listen for incoming connection requests.
@@ -184,11 +208,12 @@ bool mySocket_server::setup(int port)
 		return false;
 	}
 
-	connexions_t = thread(connexions);
+	connexions_t = thread(connexions, ServerSocket);
 	return true;
 }
 
-void connexions()
+
+void connexions(SOCKET server)
 {
 	while (true)
 	{
@@ -196,23 +221,56 @@ void connexions()
 		int nAddrSize = sizeof(sinRemote);
 		// Create a SOCKET for accepting incoming requests.
 		// Accept the connection.
-		SOCKET sd = accept(ServerSocket, (sockaddr*)&sinRemote, &nAddrSize);
+		SOCKET sd = accept(server, (sockaddr*)&sinRemote, &nAddrSize);
 		if (sd != INVALID_SOCKET) {
 			cout << "Connection acceptee De : " <<
 				inet_ntoa(sinRemote.sin_addr) << ":" <<
 				ntohs(sinRemote.sin_port) << "." <<
 				endl;
-			
+
 			clients.push_back(sd);
+			threads.push_back(thread(onReceive, sd));
 		}
 		else {
-			cerr << WSAGetLastErrorMessage("Echec d'une connection.") <<
+			cerr << mySocket_server::WSAGetLastErrorMessage("Echec d'une connection.") <<
 				endl;
 		}
 	}
 }
 
-void onReceive(SOCKET sd)
+void onReceive(const SOCKET& sd)
 {
+	bool connecte = false;
+	char rxBuf[200] = { 0 };
+	int readBytes = 0;
+	string username = "unknown";
 
+	// connexion
+	while (!connecte)
+	{
+		readBytes = recv(sd, rxBuf, 200, 0);
+		if (readBytes > 0) {
+			cout << "Received " << rxBuf << " from " << username << endl;
+
+			//verifier les credentials
+			char reponse = 'Y';
+			send(sd, &reponse, 1, 0);
+			connecte = true;
+		}
+		else if (readBytes == SOCKET_ERROR) {
+			cout << mySocket_server::WSAGetLastErrorMessage("Echec de la reception !") << endl;
+		}
+	}
+
+	while (recv(sd, rxBuf, 200, 0) > 0) {
+		cout << "Received " << rxBuf << " from " << username << endl;
+		for (int i = 0; i < clients.size(); i++) {
+			if (clients[i] == sd) {
+				continue;
+			}
+			send(clients[i], rxBuf, 200, 0);
+		}
+	}
+
+	cout << "Connexion interrompue: " << username << endl;
 }

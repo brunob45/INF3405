@@ -8,7 +8,7 @@ namespace console
 {
 	std::string readLine() {
 		std::string s;
-		std::getline(std::cin, s);
+		std::cin >> s;
 		return s;
 	}
 	char readChar() {

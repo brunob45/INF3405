@@ -12,8 +12,8 @@ private:
 public:
 	mySocket();
 	~mySocket();
-	bool connect(const char* host, const char* port) const;
-	bool connect(const std::string host, const std::string port) const
+	bool connect(const char* host, const char* port);
+	bool connect(const std::string host, const std::string port)
 	{
 		return connect(host.c_str(), port.c_str());
 	}

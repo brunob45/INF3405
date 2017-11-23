@@ -9,17 +9,10 @@ mySocket::mySocket()
 {
 	bool valide = true;
 	//--------------------------------------------
-	// Initialisation de Winsock
+	// InitialisATION de Winsock
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
 		printf("Erreur de WSAStartup: %d\n", iResult);
-		valide = false;
-	}
-	// On va creer le socket pour communiquer avec le serveur
-	leSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (leSocket == INVALID_SOCKET) {
-		printf("Erreur de socket(): %ld\n\n", WSAGetLastError());
-		WSACleanup();
 		valide = false;
 	}
 	if (!valide)
@@ -36,10 +29,17 @@ mySocket::~mySocket()
 	WSACleanup();
 }
 
-bool mySocket::connect(const char* host, const char* port) const 
+bool mySocket::connect(const char* host, const char* port)
 {
 	struct addrinfo* result = NULL;
 	struct addrinfo	hints;
+
+	// On va creer le socket pour communiquer avec le serveur
+	leSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (leSocket == INVALID_SOCKET) {
+		printf("Erreur de socket(): %ld\n\n", WSAGetLastError());
+		return false;
+	}
 
 	//--------------------------------------------
 	// On va chercher l'adresse du serveur en utilisant la fonction getaddrinfo.
@@ -48,7 +48,7 @@ bool mySocket::connect(const char* host, const char* port) const
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;  // Protocole utilisé par le serveur
 
-									  // getaddrinfo obtient l'adresse IP du host donné
+	// getaddrinfo obtient l'adresse IP du host donné
 	int iResult = getaddrinfo(host, port, &hints, &result);
 	if (iResult != 0) {
 		printf("Erreur de getaddrinfo: %d\n", iResult);
@@ -58,7 +58,9 @@ bool mySocket::connect(const char* host, const char* port) const
 	//On parcours les adresses retournees jusqu'a trouver la premiere adresse IPV4
 	while ((result != NULL) && (result->ai_family != AF_INET))
 		result = result->ai_next;
-	
+
+	//	if ((result != NULL) &&(result->ai_family==AF_INET)) result = result->ai_next;  
+
 	//-----------------------------------------
 	if (((result == NULL) || (result->ai_family != AF_INET))) {
 		freeaddrinfo(result);
@@ -80,6 +82,7 @@ bool mySocket::connect(const char* host, const char* port) const
 		freeaddrinfo(result);
 		return false;
 	}
+
 	printf("Connecte au serveur %s:%s\n\n", host, port);
 	freeaddrinfo(result);
 	return true;
@@ -89,7 +92,10 @@ bool mySocket::send(const char* message)
 {
 	//-----------------------------
 	// Envoyer le mot au serveur
-	int iResult = ::send(leSocket, message, strlen(message), 0);
+	char buf[200] = { ' ' };
+	memcpy(buf, message, strlen(message));
+
+	int iResult = ::send(leSocket, buf, 200, 0);
 	if (iResult == SOCKET_ERROR) {
 		printf("Erreur du send: %d\n", WSAGetLastError());
 		return false;

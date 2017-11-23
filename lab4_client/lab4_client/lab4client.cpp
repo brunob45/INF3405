@@ -31,15 +31,15 @@ bool connecterAuServeur() {
 		return false;
 	}
 
-	return leSocket.connect(host.c_str(), port.c_str());
+	return leSocket.connect(host, port);
 }
 
 bool connecterAuCompte() {
 	string username = console::prompt("Saisir le nom d'utilisateur : ");
 	string password = console::prompt("Saisir le mot de passe : ");
-
 	leSocket.send("connexion:" + username + "," + password);
-	return leSocket.read(1) == "A";
+	string ret = leSocket.read(1);
+	return ret[0] == 'Y';
 }
 
 int __cdecl main(int argc, char **argv) {
@@ -47,11 +47,11 @@ int __cdecl main(int argc, char **argv) {
 
 	leSocket = mySocket();
 	while (!connecterAuServeur()) {
-		console::writeLine(" Entree invalide. Veuillez reessayer.");
+		console::writeLine("\n Entree invalide. Veuillez reessayer.");
 	}
 
 	while (!connecterAuCompte()) {
-		console::writeLine(" Impossible de se connecter. Veuillez reessayer");
+		console::writeLine("\n Impossible de se connecter. Veuillez reessayer");
 	}
 
 	// partir les thread
@@ -73,7 +73,7 @@ int __cdecl main(int argc, char **argv) {
 void serverListener() {
 	while (continuer) {
 		string msg = leSocket.read(200);
-		cout << msg;
+		cout << msg << endl;
 	}
 }
 
@@ -86,15 +86,18 @@ void clientListener() {
 		if (message.length() == 0) {
 			continuer = false;
 		}
+		leSocket.send(message);
 	}
 }
 
 bool verifyIP(string ip) {
+	return true;
 	regex expression("^([01][0-9][0-9]|2[0-4][0-9]|25[0-5])$.^([01][0-9][0-9]|2[0-4][0-9]|25[0-5])$.^([01][0-9][0-9]|2[0-4][0-9]|25[0-5])$.^([01][0-9][0-9]|2[0-4][0-9]|25[0-5])$.^([01][0-9][0-9]|2[0-4][0-9]|25[0-5])$");
 	return regex_match(ip, expression);
 }
 
 bool verifyPort(string port) {
+	return true;
 	if (atoi(port.c_str()) > 5000 && atoi(port.c_str()) < 5050)
 		return true;
 	else

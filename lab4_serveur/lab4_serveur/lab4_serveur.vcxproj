@@ -147,11 +147,12 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="socket.cpp" />
+    <ClCompile Include="lab4serveur.cpp" />
+    <ClCompile Include="socket_server.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="socket.h" />
+    <ClInclude Include="console.h" />
+    <ClInclude Include="socket_server.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
