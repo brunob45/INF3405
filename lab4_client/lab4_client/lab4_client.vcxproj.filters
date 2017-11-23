@@ -21,12 +21,6 @@
     <ClCompile Include="lab4client.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="console.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
     <ClCompile Include="socket.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>

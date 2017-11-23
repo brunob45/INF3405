@@ -3,33 +3,27 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <ws2tcpip.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include "socket.h"
-
-
-// Link avec ws2_32.lib
-#pragma comment(lib, "ws2_32.lib")
 
 mySocket::mySocket()
 {
-	result = NULL;
-	ptr = NULL;
-	inputbuf_dirty = false;
-
+	bool valide = true;
 	//--------------------------------------------
-	// InitialisATION de Winsock
+	// Initialisation de Winsock
 	int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
 		printf("Erreur de WSAStartup: %d\n", iResult);
-		exit(1);
+		valide = false;
 	}
 	// On va creer le socket pour communiquer avec le serveur
 	leSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (leSocket == INVALID_SOCKET) {
 		printf("Erreur de socket(): %ld\n\n", WSAGetLastError());
-		freeaddrinfo(result);
 		WSACleanup();
+		valide = false;
+	}
+	if (!valide)
+	{
 		printf("Appuyez une touche pour finir\n");
 		getchar();
 		exit(1);
@@ -38,13 +32,15 @@ mySocket::mySocket()
 
 mySocket::~mySocket()
 {
-	freeaddrinfo(result);
 	closesocket(leSocket);
 	WSACleanup();
 }
 
-bool mySocket::connect(const char* host, const char* port)
+bool mySocket::connect(const char* host, const char* port) const 
 {
+	struct addrinfo* result = NULL;
+	struct addrinfo	hints;
+
 	//--------------------------------------------
 	// On va chercher l'adresse du serveur en utilisant la fonction getaddrinfo.
 	ZeroMemory(&hints, sizeof(hints));
@@ -53,7 +49,7 @@ bool mySocket::connect(const char* host, const char* port)
 	hints.ai_protocol = IPPROTO_TCP;  // Protocole utilisé par le serveur
 
 									  // getaddrinfo obtient l'adresse IP du host donné
-	iResult = getaddrinfo(host, port, &hints, &result);
+	int iResult = getaddrinfo(host, port, &hints, &result);
 	if (iResult != 0) {
 		printf("Erreur de getaddrinfo: %d\n", iResult);
 		return false;
@@ -93,7 +89,7 @@ bool mySocket::send(const char* message)
 {
 	//-----------------------------
 	// Envoyer le mot au serveur
-	iResult = ::send(leSocket, motEnvoye, 7, 0);
+	int iResult = ::send(leSocket, message, strlen(message), 0);
 	if (iResult == SOCKET_ERROR) {
 		printf("Erreur du send: %d\n", WSAGetLastError());
 		return false;
@@ -103,73 +99,8 @@ bool mySocket::send(const char* message)
 std::string mySocket::read(int taille)
 {
 	char* buf = new char[taille];
-	iResult = recv(leSocket, buf, taille, 0);
+	int iResult = recv(leSocket, buf, taille, 0);
 	std::string ret = buf;
 	delete[] buf;
 	return ret;
 }
-
-void mySocket::receiveT()
-{
-	bool _continue = true;
-	while (_continue)
-	{
-		const int len = 80;
-		char buf[len] = { 0 };
-
-		int iResult = recv(leSocket, buf, len, 0);
-		if (iResult > 0) {
-			buf[iResult] = '\0';
-			inputbuf.push_back(buf);
-			inputbuf_dirty = true;
-		}
-		else {
-			printf("Erreur de reception : %d\n", WSAGetLastError());
-		}
-	}
-}
-
-
-
-/*
-	//----------------------------
-	// Demander à l'usager un mot a envoyer au serveur
-	printf("Saisir un mot de 7 lettres pour envoyer au serveur: ");
-	gets_s(motEnvoye);
-
-	//-----------------------------
-	// Envoyer le mot au serveur
-	iResult = send(leSocket, motEnvoye, 7, 0);
-	if (iResult == SOCKET_ERROR) {
-		printf("Erreur du send: %d\n", WSAGetLastError());
-		closesocket(leSocket);
-		WSACleanup();
-		printf("Appuyez une touche pour finir\n");
-		getchar();
-
-		return 1;
-	}
-
-	printf("Nombre d'octets envoyes : %ld\n", iResult);
-
-	//------------------------------
-	// Maintenant, on va recevoir l' information envoyée par le serveur
-	iResult = recv(leSocket, motRecu, 7, 0);
-	if (iResult > 0) {
-		printf("Nombre d'octets recus: %d\n", iResult);
-		motRecu[iResult] = '\0';
-		printf("Le mot recu est %*s\n", iResult, motRecu);
-	}
-	else {
-		printf("Erreur de reception : %d\n", WSAGetLastError());
-	}
-
-	// cleanup
-	closesocket(leSocket);
-	WSACleanup();
-
-	printf("Appuyez une touche pour finir\n");
-	getchar();
-	return 0;
-}
-*/

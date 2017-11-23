@@ -1,7 +1,6 @@
 #pragma once
 
 #include <winsock2.h>
-#include <vector>
 #include <string>
 
 class mySocket
@@ -9,21 +8,19 @@ class mySocket
 private:
 	WSADATA wsaData;
 	SOCKET leSocket;// = INVALID_SOCKET;
-	struct addrinfo *result = NULL,
-		*ptr = NULL,
-		hints;
-	char motEnvoye[10];
-	char motRecu[10];
-	int iResult;
-	std::vector<std::string> inputbuf;
-	bool inputbuf_dirty;
 
 public:
 	mySocket();
 	~mySocket();
-	bool connect(const char* host, const char* port);
+	bool connect(const char* host, const char* port) const;
+	bool connect(const std::string host, const std::string port) const
+	{
+		return connect(host.c_str(), port.c_str());
+	}
 	bool send(const char* message);
+	bool send(const std::string message)
+	{
+		return send(message.c_str());
+	}
 	std::string read(int taille);
-private:
-	void receiveT();
 };

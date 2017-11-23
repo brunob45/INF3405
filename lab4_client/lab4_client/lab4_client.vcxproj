@@ -146,9 +146,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="console.cpp" />
     <ClCompile Include="lab4client.cpp" />
-    <ClCompile Include="main.cpp" />
     <ClCompile Include="socket.cpp" />
   </ItemGroup>
   <ItemGroup>
