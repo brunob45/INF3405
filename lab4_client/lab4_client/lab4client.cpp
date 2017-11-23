@@ -91,14 +91,12 @@ void clientListener() {
 }
 
 bool verifyIP(string ip) {
-	return true;
-	regex expression("^([01][0-9][0-9]|2[0-4][0-9]|25[0-5])$.^([01][0-9][0-9]|2[0-4][0-9]|25[0-5])$.^([01][0-9][0-9]|2[0-4][0-9]|25[0-5])$.^([01][0-9][0-9]|2[0-4][0-9]|25[0-5])$.^([01][0-9][0-9]|2[0-4][0-9]|25[0-5])$");
+	regex expression("\\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b");
 	return regex_match(ip, expression);
 }
 
 bool verifyPort(string port) {
-	return true;
-	if (atoi(port.c_str()) > 5000 && atoi(port.c_str()) < 5050)
+	if (atoi(port.c_str()) >= 5000 && atoi(port.c_str()) <= 5050)
 		return true;
 	else
 		return false;
