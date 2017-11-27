@@ -18,26 +18,17 @@ using namespace std;
 // link with Ws2_32.lib
 #pragma comment( lib, "ws2_32.lib" )
 
-// External functions
-//extern DWORD WINAPI EchoHandler(void* sd_) ;
-//extern void DoSomething( char *src, char *dest );
-
 mySocket_server leSocket;
 bool continuer = true;
 
 
 bool verifyIP(string ip) {
-	return true;
 	regex expression("\\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\b");
 	return regex_match(ip, expression);
 }
 
 bool verifyPort(string port) {
-	return true;
-	if (atoi(port.c_str()) > 5000 && atoi(port.c_str()) < 5050)
-		return true;
-	else
-		return false;
+	return (atoi(port.c_str()) >= 5000 && atoi(port.c_str()) <= 5050);
 }
 
 bool connecterAuServeur() {
