@@ -37,8 +37,16 @@ bool connecterAuServeur() {
 bool connecterAuCompte() {
 	string username = console::prompt("Saisir le nom d'utilisateur : ");
 	string password = console::prompt("Saisir le mot de passe : ");
-	leSocket.send("connexion:" + username + "," + password);
-	string ret = leSocket.read(1);
+	leSocket.send("connexion:" + username + "," + password + "\0");
+	string ret = "";
+	leSocket.read(ret, 1);
+	if (ret[0] == 'R')
+	{
+		string creer = (console::prompt("Compte inexistant, creer un compte? [o/N]")+"N").substr(0, 1);
+		leSocket.send(creer);
+		leSocket.read(ret, 1);
+		return creer[0] == 'Y' || creer[0] == 'y' || creer[0] == 'O' || creer[0] == 'o';
+	}
 	return ret[0] == 'Y';
 }
 
@@ -53,6 +61,7 @@ int __cdecl main(int argc, char **argv) {
 	while (!connecterAuCompte()) {
 		console::writeLine("\n Impossible de se connecter. Veuillez reessayer");
 	}
+	console::writeLine("Bienvenue dans le chat");
 
 	// partir les thread
 	thread server(serverListener);
@@ -72,9 +81,11 @@ int __cdecl main(int argc, char **argv) {
 
 void serverListener() {
 	while (continuer) {
-		string msg = leSocket.read(200);
-		cout << msg << endl;
+		string msg = "";
+		if(continuer = leSocket.read(msg, 200))
+			cout << msg << endl;
 	}
+	cout << "Serveur hors connexion." << endl;
 }
 
 void clientListener() {
@@ -83,7 +94,7 @@ void clientListener() {
 		if (message.length() > 200) {
 			message = message.substr(0, 200);
 		}
-		if (message.length() == 0) {
+		if (message.length() <= 0) {
 			continuer = false;
 		}
 		leSocket.send(message);
@@ -96,8 +107,5 @@ bool verifyIP(string ip) {
 }
 
 bool verifyPort(string port) {
-	if (atoi(port.c_str()) >= 5000 && atoi(port.c_str()) <= 5050)
-		return true;
-	else
-		return false;
+	return (atoi(port.c_str()) >= 5000 && atoi(port.c_str()) <= 5050);
 }

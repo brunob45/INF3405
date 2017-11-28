@@ -147,10 +147,12 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="db.cpp" />
     <ClCompile Include="lab4serveur.cpp" />
     <ClCompile Include="socket_server.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="db.h" />
     <ClInclude Include="console.h" />
     <ClInclude Include="socket_server.h" />
   </ItemGroup>

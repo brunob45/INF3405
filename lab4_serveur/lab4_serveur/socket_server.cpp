@@ -9,6 +9,7 @@
 #include <vector>
 #include <thread>
 #include "socket_server.h"
+#include "db.h"
 
 using namespace std;
 
@@ -16,6 +17,9 @@ void connexions(SOCKET server);
 void onReceive(const SOCKET& sd);
 vector<SOCKET> clients;
 vector<thread> threads;
+db users;
+db chat;
+
 
 // List of Winsock error constants mapped to an interpretation string.
 // Note that this list must remain sorted by the error constants'
@@ -151,6 +155,9 @@ mySocket_server::mySocket_server()
 	}
 	char option[] = "1";
 	setsockopt(ServerSocket, SOL_SOCKET, SO_REUSEADDR, option, sizeof(option));
+
+	users.open("users.txt");
+	chat.open("chat.txt");
 }
 
 mySocket_server::~mySocket_server()
@@ -174,7 +181,7 @@ bool mySocket_server::setup(std::string host, std::string port)
 	hints.ai_protocol = IPPROTO_TCP;  // Protocole utilisé par le serveur
 	hints.ai_flags = AI_PASSIVE;
 
-									  // getaddrinfo obtient l'adresse IP du host donné
+	// getaddrinfo obtient l'adresse IP du host donné
 	int iResult = getaddrinfo(host.c_str(), port.c_str(), &hints, &service);
 	if (iResult != 0) {
 		printf("Erreur de getaddrinfo: %d\n", iResult);
@@ -243,19 +250,52 @@ void onReceive(const SOCKET& sd)
 	bool connecte = false;
 	char rxBuf[200] = { 0 };
 	int readBytes = 0;
-	string username = "unknown";
+	string username = "";
 
 	// connexion
 	while (!connecte)
 	{
+		username = "unknown";
 		readBytes = recv(sd, rxBuf, 200, 0);
 		if (readBytes > 0) {
 			cout << "Received " << rxBuf << " from " << username << endl;
 
+			int index = 0;
+			for (index = 0; index < 200 && rxBuf[index] != '\0' && rxBuf[index] != ':'; index++);
+
+			username = "";
+			string pass = "";
+			for (index++; index < 200 && rxBuf[index] != '\0' && rxBuf[index] != ','; index++)
+			{
+				username += rxBuf[index];
+			}
+			for (index++; index < 200 && rxBuf[index] != '\0' && rxBuf[index] != ','; index++)
+			{
+				pass += rxBuf[index];
+			}
+
 			//verifier les credentials
-			char reponse = 'Y';
+
+			char reponse = 'N';
+			if (!users.contains(username))
+			{
+				reponse = 'R';
+				send(sd, &reponse, 1, 0);
+				readBytes = recv(sd, rxBuf, 200, 0);
+				if (rxBuf[0] == 'Y' || rxBuf[0] == 'y' || rxBuf[0] == 'o' || rxBuf[0] == 'O')
+					users.add(username, pass, true);
+				
+				reponse = 'Y';
+				connecte = true;
+			}
+
+			if (users.fetch(username) == pass)
+			{
+				reponse = 'Y';
+				connecte = true;
+			}
 			send(sd, &reponse, 1, 0);
-			connecte = true;
+			cout << username << " connecte." << endl;
 		}
 		else if (readBytes == SOCKET_ERROR) {
 			cout << mySocket_server::WSAGetLastErrorMessage("Echec de la reception !") << endl;

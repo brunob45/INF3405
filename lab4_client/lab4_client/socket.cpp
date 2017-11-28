@@ -5,6 +5,8 @@
 #include <ws2tcpip.h>
 #include "socket.h"
 
+using namespace std;
+
 mySocket::mySocket()
 {
 	bool valide = true;
@@ -102,11 +104,16 @@ bool mySocket::send(const char* message)
 	}
 	return true;
 }
-std::string mySocket::read(int taille)
+bool mySocket::read(string& line, int taille)
 {
 	char* buf = new char[taille];
-	int iResult = recv(leSocket, buf, taille, 0);
-	std::string ret = buf;
+	if (recv(leSocket, buf, taille, 0) < 0)
+	{
+		printf("Le serveur est deconnecte.");
+		getchar();
+		exit(0);
+	}
+	line = buf;
 	delete[] buf;
-	return ret;
+	return true;
 }

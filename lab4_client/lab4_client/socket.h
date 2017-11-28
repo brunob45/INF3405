@@ -22,5 +22,5 @@ public:
 	{
 		return send(message.c_str());
 	}
-	std::string read(int taille);
+	bool read(std::string& line, int taille);
 };
